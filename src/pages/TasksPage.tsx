@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { OpenAPI } from '../services/api/core/OpenAPI';
+import { OpenAPI } from '../client/core/OpenAPI';
 
 export default function TasksPage() {
     const navigate = useNavigate();

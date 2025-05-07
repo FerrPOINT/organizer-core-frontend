@@ -1,5 +1,5 @@
-import { OpenAPI } from '../services/api/core/OpenAPI'; // путь скорректирован
-import type { ApiRequestOptions } from '../services/api/core/ApiRequestOptions';
+import { OpenAPI } from '../client/core/OpenAPI'; // путь скорректирован
+import type { ApiRequestOptions } from '../client/core/ApiRequestOptions';
 
 export const getToken = async (): Promise<string | undefined> => {
     const token = OpenAPI.TOKEN;

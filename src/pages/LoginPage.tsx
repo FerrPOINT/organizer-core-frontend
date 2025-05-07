@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { OpenAPI } from '../services/api/core/OpenAPI';
-import { DefaultService } from '../services/api';
+import {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {OpenAPI} from '../client/core/OpenAPI';
+import {DefaultService, UsersService} from '../client';
+import {useSelector} from 'react-redux';
+import {setUser} from "../features/authSlice";
+import {useDispatch} from 'react-redux';
 
 export default function LoginPage() {
     const [username, setUsername] = useState('');
@@ -9,17 +12,25 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
     OpenAPI.BASE = 'http://localhost:8000'; // заменить при деплое
+    const dispatch = useDispatch();
 
     const handleLogin = async () => {
         try {
-            const res = await DefaultService.loginTokenPost({ username, password });
-
+            const res = await DefaultService.loginTokenPost({username, password});
             localStorage.setItem('access_token', res.access_token);
-
             // конфигурируем OpenAPI глобально
             OpenAPI.TOKEN = () => Promise.resolve(res.access_token);
 
-            navigate('/tasks');
+            var user = await UsersService.readUserUsersUserIdGet(res.user_id);
+
+            dispatch(setUser({
+                id: user.id,
+                email: user.email || 'undefined',
+                name: user.name || 'undefined',
+                role: user.role || 'undefined',
+            }));
+
+            navigate('/users');
         } catch (e) {
             console.error('Ошибка авторизации:', e);
             setError('Неверный логин или пароль');
