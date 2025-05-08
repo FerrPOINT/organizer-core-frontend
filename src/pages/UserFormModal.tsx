@@ -3,6 +3,7 @@ import { Dialog } from '@headlessui/react';
 import { useForm } from 'react-hook-form';
 import type { UserCreate, UserUpdate, UserOut } from '../client/index';
 import { useEffect } from 'react';
+import React from 'react';
 
 type Props = {
   initial?: UserOut | null;

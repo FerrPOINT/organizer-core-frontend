@@ -5,6 +5,7 @@ import {UserCreate, UserOut, UserUpdate} from '../client';
 import {UserFormModal} from './UserFormModal';
 import {useSelector} from 'react-redux';
 import {useNavigate} from 'react-router-dom';
+import React from 'react';
 
 export const UsersPage = () => {
     const currentUser = useSelector((state: any) => state.auth.user);

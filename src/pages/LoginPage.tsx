@@ -1,8 +1,7 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {OpenAPI} from '../client/core/OpenAPI';
 import {DefaultService, UsersService} from '../client';
-import {useSelector} from 'react-redux';
 import {setUser} from "../features/authSlice";
 import {useDispatch} from 'react-redux';
 
@@ -21,7 +20,7 @@ export default function LoginPage() {
             // конфигурируем OpenAPI глобально
             OpenAPI.TOKEN = () => Promise.resolve(res.access_token);
 
-            var user = await UsersService.readUserUsersUserIdGet(res.user_id);
+            const user = await UsersService.readUserUsersUserIdGet(res.user_id);
 
             dispatch(setUser({
                 id: user.id,
@@ -39,7 +38,7 @@ export default function LoginPage() {
 
     return (
         <div className="p-6 max-w-md mx-auto">
-            <h1 className="text-xl font-bold mb-4">Авторизация</h1>
+            <h1 className="text-4xl text-red-600">Авторизация</h1>
             <input
                 type="text"
                 placeholder="Логин"
