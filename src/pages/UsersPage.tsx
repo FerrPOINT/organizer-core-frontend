@@ -1,137 +1,140 @@
-// UsersPage.tsx
-import {useEffect, useState} from 'react';
-import {UsersService} from '../client/services/UsersService';
-import {UserCreate, UserOut, UserUpdate} from '../client';
-import {UserFormModal} from './UserFormModal';
-import {useSelector} from 'react-redux';
-import {useNavigate} from 'react-router-dom';
-import React from 'react';
+// UsersPage.tsx — обновлённая версия под shadcn/ui
+import { useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import { UsersService } from '../client/services/UsersService'
+import { UserCreate, UserOut, UserUpdate } from '../client'
+import { UserFormModal } from './UserFormModal'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+// npx shadcn@latest add badge table
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import React from 'react'
 
 export const UsersPage = () => {
-    const currentUser = useSelector((state: any) => state.auth.user);
-    console.info('Пользователь: %d', currentUser.id);
-    const [users, setUsers] = useState<UserOut[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [editingUser, setEditingUser] = useState<UserOut | null>(null);
-    const [modalOpen, setModalOpen] = useState(false);
-    const navigate = useNavigate();
+    const currentUser = useSelector((state: any) => state.auth.user)
+    const navigate = useNavigate()
 
-    // Загружает список пользователей с сервера
+    const [users, setUsers] = useState<UserOut[]>([])
+    const [loading, setLoading] = useState(false)
+    const [editingUser, setEditingUser] = useState<UserOut | null>(null)
+    const [modalOpen, setModalOpen] = useState(false)
+
     const fetchUsers = async () => {
-        if (currentUser.role != 'admin') {
-            navigate('/tasks');
+        if (currentUser.role !== 'admin') {
+            navigate('/tasks')
+            return
         }
-        setLoading(true);
+        setLoading(true)
         try {
-            const res = await UsersService.listUsersUsersGet();
-            setUsers(res);
-        } catch (error) {
-            console.error('Ошибка при загрузке пользователей:', error);
-            alert('Не удалось загрузить список пользователей.');
+            const res = await UsersService.listUsersUsersGet()
+            setUsers(res)
+        } catch (e) {
+            console.error('Ошибка при загрузке пользователей:', e)
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
-    };
+    }
 
-    // Один раз при монтировании загружаем список
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        fetchUsers()
+    }, [])
 
-    // Создание нового пользователя
     const handleCreate = async (data: UserCreate) => {
         try {
-            await UsersService.createUserUsersPost(data);
-            await fetchUsers();
+            await UsersService.createUserUsersPost(data)
+            await fetchUsers()
             setModalOpen(false)
-        } catch (error) {
-            console.error('Ошибка при создании пользователя:', error);
-            alert('Не удалось создать пользователя. Проверьте введённые данные.');
+        } catch (e) {
+            console.error('Ошибка при создании пользователя:', e)
+            throw e // пробрасываем ошибку обратно в UserFormModal
         }
-    };
+    }
 
-    // Обновление существующего пользователя
     const handleUpdate = async (data: UserUpdate) => {
-        if (!editingUser) return;
+        if (!editingUser) return
         try {
-            await UsersService.updateUserUsersPut(data);
-            setEditingUser(null);
-            await fetchUsers();
+            await UsersService.updateUserUsersPut(data)
+            await fetchUsers()
+            setEditingUser(null)
             setModalOpen(false)
-        } catch (error) {
-            console.error('Ошибка при обновлении пользователя:', error);
-            alert('Не удалось обновить пользователя. Проверьте введённые данные.');
+        } catch (e) {
+            console.error('Ошибка при обновлении пользователя:', e)
         }
-    };
+    }
 
-    // Удаление пользователя
     const handleDelete = async (id: number) => {
         try {
-            await UsersService.deleteUserUsersUserIdDelete(id);
-            await fetchUsers();
-        } catch (error) {
-            console.error('Ошибка при удалении пользователя:', error);
-            alert('Не удалось удалить пользователя.');
+            await UsersService.deleteUserUsersUserIdDelete(id)
+            await fetchUsers()
+        } catch (e) {
+            console.error('Ошибка при удалении пользователя:', e)
         }
-    };
+    }
 
     return (
-        <div className="p-4">
-            <h1 className="text-xl font-bold mb-4">Пользователи</h1>
+        <div className="p-6 max-w-6xl mx-auto">
+            <Card>
+                <CardHeader className="flex flex-row justify-between items-center">
+                    <CardTitle className="text-2xl">Пользователи</CardTitle>
+                    <Button onClick={() => {
+                        setEditingUser(null)
+                        setModalOpen(true)
+                    }}>
+                        + Новый пользователь
+                    </Button>
+                </CardHeader>
 
-            <button className="btn btn-primary mb-2" onClick={() => {
-                setEditingUser(null);
-                setModalOpen(true);
-            }}>
-                + Новый пользователь
-            </button>
-
-            {loading ? (
-                <div>Загрузка...</div>
-            ) : (
-                <table className="table-auto w-full border">
-                    <thead>
-                    <tr>
-                        <th>Имя</th>
-                        <th>Email</th>
-                        <th>Роль</th>
-                        <th>Активен</th>
-                        <th>Действия</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {users.map(user => (
-                        <tr key={user.id} className="border-t">
-                            <td>{user.name}</td>
-                            <td>{user.email}</td>
-                            <td>{user.role}</td>
-                            <td>{user.is_active ? '✅' : '❌'}</td>
-                            <td>
-                                <button onClick={() => {
-                                    setEditingUser(user);
-                                    setModalOpen(true);
-                                }}>✏️
-                                </button>
-                                <button onClick={() => handleDelete(user.id)}>🗑️</button>
-                            </td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </table>
-            )}
+                <CardContent>
+                    {loading ? (
+                        <div className="text-muted-foreground">Загрузка...</div>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Имя</TableHead>
+                                    <TableHead>Email</TableHead>
+                                    <TableHead>Роль</TableHead>
+                                    <TableHead>Активен</TableHead>
+                                    <TableHead>Действия</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {users.map(user => (
+                                    <TableRow key={user.id}>
+                                        <TableCell>{user.name}</TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell>
+                                            <Badge>{user.role}</Badge>
+                                        </TableCell>
+                                        <TableCell>{user.is_active ? '✅' : '❌'}</TableCell>
+                                        <TableCell className="space-x-2">
+                                            <Button size="sm" variant="outline" onClick={() => {
+                                                setEditingUser(user)
+                                                setModalOpen(true)
+                                            }}>
+                                                ✏️
+                                            </Button>
+                                            <Button size="sm" variant="destructive" onClick={() => handleDelete(user.id)}>
+                                                🗑️
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
 
             {modalOpen && (
                 <UserFormModal
                     initial={editingUser}
-                    onSubmit={(values) => {
-                        editingUser
-                            ? handleUpdate(values as UserUpdate)
-                            : handleCreate(values as UserCreate)
-                    }
-                    }
+                    onSubmit={editingUser ? handleUpdate : handleCreate}
                     onClose={() => setModalOpen(false)}
                 />
             )}
         </div>
-    );
-};
+    )
+}

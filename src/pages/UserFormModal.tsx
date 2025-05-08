@@ -1,112 +1,209 @@
-// UserFormModal.tsx
-import { Dialog } from '@headlessui/react';
-import { useForm } from 'react-hook-form';
-import type { UserCreate, UserUpdate, UserOut } from '../client/index';
-import { useEffect } from 'react';
-import React from 'react';
+// UserFormModal.tsx — с валидацией, автофокусом, сохранением роли, FormWrapper из shadcn/ui
+import { useEffect, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import type { UserCreate, UserUpdate, UserOut } from '../client'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import React from 'react'
 
-type Props = {
-  initial?: UserOut | null;
-  onSubmit: (values: UserCreate | UserUpdate) => void;
-  onClose: () => void;
-};
+interface Props {
+    initial?: UserOut | null
+    onSubmit: (values: UserCreate | UserUpdate) => Promise<void>
+    onClose: () => void
+}
 
 function mapUserOutToUserUpdate(user: UserOut): UserUpdate {
-  return {
-    ...user,
-    password: '', // 👈 добавляем обязательное поле
-  };
+    return {
+        ...user,
+        password: '',
+    }
 }
 
 export const UserFormModal = ({ initial, onSubmit, onClose }: Props) => {
-  const isEdit = !!initial?.id;
+    const isEdit = !!initial?.id
+    const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const { register, handleSubmit, reset } = useForm<UserCreate>({
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      is_active: true,
-      role: 'student',
-    },
-  });
+    const form = useForm<UserCreate>({
+        mode: 'onChange',
+        defaultValues: {
+            name: '',
+            email: '',
+            password: '',
+            is_active: true,
+            role: 'student',
+        },
+    })
 
-  useEffect(() => {
-    if (initial) {
-      const { id, ...data } = mapUserOutToUserUpdate(initial); // 👈 безопасно
-      reset({
-        name: data.name ?? '',
-        email: data.email ?? '',
-        role: data.role ?? 'student',
-        password: undefined, // всегда очищаем
-        is_active: data.is_active ?? true,
-      });
+    const {
+        register,
+        handleSubmit,
+        reset,
+        setValue,
+        watch,
+        formState: { errors, isValid },
+    } = form
+
+    useEffect(() => {
+        if (initial) {
+            const { id, ...data } = mapUserOutToUserUpdate(initial)
+            reset({
+                name: data.name ?? '',
+                email: data.email ?? '',
+                role: data.role ?? 'student',
+                password: '',
+                is_active: data.is_active ?? true,
+            })
+        } else {
+            const savedRole = localStorage.getItem('last_role') || 'student'
+            setValue('role', savedRole as UserCreate['role'])
+        }
+    }, [initial, reset, setValue])
+
+    const handleFormSubmit = async (values: UserCreate) => {
+        try {
+            setSubmitError(null)
+            localStorage.setItem('last_role', values.role)
+            if (isEdit && initial?.id !== undefined) {
+                const { password, ...rest } = values;
+                const payload = password ? { ...rest, password, id: initial.id } : { ...rest, id: initial.id };
+                await onSubmit(payload)
+            } else {
+                await onSubmit(values)
+            }
+        } catch (e: any) {
+            console.error('Ошибка при отправке формы:', e)
+
+            const detail =
+                e?.response?.data?.detail ||
+                e?.body?.detail ||
+                e?.message ||
+                'Ошибка при сохранении пользователя. Попробуйте ещё раз.'
+
+            if (Array.isArray(detail)) {
+                setSubmitError(detail.map((d: any) => d.msg).join('; '))
+            } else {
+                setSubmitError(typeof detail === 'string' ? detail : 'Неизвестная ошибка')
+            }
+            throw e
+        }
     }
-  }, [initial, reset]);
 
-  const handleFormSubmit = (values: UserCreate) => {
-    if (isEdit && initial?.id !== undefined) {
-      onSubmit({ ...values, id: initial.id }); // безопасно кастится в UserUpdate
-    } else {
-      onSubmit(values);
-    }
-  };
+    return (
+        <Dialog open onOpenChange={onClose}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>
+                        {isEdit ? 'Редактировать пользователя' : 'Создать пользователя'}
+                    </DialogTitle>
+                </DialogHeader>
 
-  return (
-      <Dialog open={true} onClose={onClose} className="fixed z-50 inset-0 flex items-center justify-center">
-        <div className="fixed inset-0 bg-black opacity-30" />
-        <Dialog.Panel className="bg-white rounded-lg shadow p-6 z-50 max-w-md w-full">
-          <Dialog.Title className="text-lg font-bold mb-4">
-            {isEdit ? 'Редактировать пользователя' : 'Создать пользователя'}
-          </Dialog.Title>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Имя</FormLabel>
+                                    <FormControl>
+                                        <Input autoFocus {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Имя</label>
-              <input {...register('name', { required: true })} className="w-full input input-bordered" />
-            </div>
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-            <div>
-              <label className="block text-sm font-medium">Email</label>
-              <input type="email" {...register('email')} className="w-full input input-bordered" />
-            </div>
+                        {!isEdit && (
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Пароль</FormLabel>
+                                        <FormControl>
+                                            <Input type="password" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />)}
 
-            <div>
-              <label className="block text-sm font-medium">Роль</label>
-              <select {...register('role')} className="w-full input input-bordered">
-                <option value="student">Ученик</option>
-                <option value="teacher">Учитель</option>
-                <option value="manager">Менеджер</option>
-                <option value="admin">Админ</option>
-              </select>
-            </div>
+                        <FormField
+                            control={form.control}
+                            name="role"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Роль</FormLabel>
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Выберите роль" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="student">Ученик</SelectItem>
+                                            <SelectItem value="teacher">Учитель</SelectItem>
+                                            <SelectItem value="manager">Менеджер</SelectItem>
+                                            <SelectItem value="admin">Админ</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
-            {!isEdit && (
-                <div>
-                  <label className="block text-sm font-medium">Пароль</label>
-                  <input
-                      type="password"
-                      {...register('password', { required: true })}
-                      className="w-full input input-bordered"
-                  />
-                </div>
-            )}
+                        <FormField
+                            control={form.control}
+                            name="is_active"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center gap-2">
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                            id="is_active"
+                                        />
+                                    </FormControl>
+                                    <FormLabel htmlFor="is_active">Активен</FormLabel>
+                                </FormItem>
+                            )}
+                        />
 
-            <div className="flex items-center space-x-2">
-              <input type="checkbox" {...register('is_active')} id="is_active" />
-              <label htmlFor="is_active">Активен</label>
-            </div>
+                        {submitError && <p className="text-sm text-red-500">{submitError}</p>}
 
-            <div className="flex justify-end space-x-2 pt-4">
-              <button type="submit" className="btn btn-primary">
-                {isEdit ? 'Сохранить' : 'Создать'}
-              </button>
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
-                Отмена
-              </button>
-            </div>
-          </form>
-        </Dialog.Panel>
-      </Dialog>
-  );
-};
+                        <div className="flex justify-end gap-2 pt-4">
+                            <Button type="submit" disabled={!isValid}>
+                                {isEdit ? 'Сохранить' : 'Создать'}
+                            </Button>
+                            <Button type="button" variant="secondary" onClick={onClose}>
+                                Отмена
+                            </Button>
+                        </div>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    )
+}
