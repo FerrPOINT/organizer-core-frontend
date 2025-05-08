@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage'
 import TasksPage from './pages/TasksPage'
 import { UsersPage } from './pages/UsersPage'
 import React from 'react'
+import OrganizerPage from "@/pages/OrganizerPage";
 
 export default function App() {
     const currentUserId = useSelector((state: RootState) => state.auth.user?.id)
@@ -13,11 +14,10 @@ export default function App() {
     return (
         <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/tasks" element={<TasksPage />} />
-            <Route path="/users" element={<UsersPage />} />
+            <Route path="/" element={<OrganizerPage />} />
             <Route
                 path="*"
-                element={<Navigate to={currentUserId ? '/tasks' : '/login'} replace />}
+                element={<Navigate to={currentUserId ? '/' : '/login'} replace />}
             />
         </Routes>
     )
