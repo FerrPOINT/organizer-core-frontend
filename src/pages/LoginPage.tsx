@@ -16,7 +16,6 @@ export default function LoginPage() {
     const navigate = useNavigate()
     const dispatch = useDispatch()
 
-    // при загрузке страницы — подставить логин и пароль из localStorage
     useEffect(() => {
         const savedUsername = localStorage.getItem('saved_username') || ''
         const savedPassword = localStorage.getItem('saved_password') || ''
@@ -28,7 +27,6 @@ export default function LoginPage() {
         try {
             OpenAPI.BASE = 'http://localhost:8000'
 
-            // сохранить логин/пароль
             localStorage.setItem('saved_username', username)
             localStorage.setItem('saved_password', password)
 
@@ -55,25 +53,37 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background">
-            <Card className="w-full max-w-md shadow-lg">
-                <CardHeader>
-                    <CardTitle className="text-2xl text-center">Вход в систему</CardTitle>
+        <div className="min-h-screen flex items-center justify-center bg-background px-4">
+            <Card className="w-full max-w-md border rounded-xl shadow-xl">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-2xl text-center font-semibold tracking-tight">
+                        Вход в систему
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Input
-                        placeholder="Логин"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
-                    <Input
-                        type="password"
-                        placeholder="Пароль"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                    {error && <div className="text-sm text-red-500">{error}</div>}
-                    <Button onClick={handleLogin} className="w-full">
+                    <div className="space-y-2">
+                        <Input
+                            placeholder="Логин"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="h-10"
+                        />
+                        <Input
+                            type="password"
+                            placeholder="Пароль"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="h-10"
+                        />
+                    </div>
+
+                    {error && (
+                        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded-md border border-destructive">
+                            {error}
+                        </div>
+                    )}
+
+                    <Button onClick={handleLogin} className="w-full h-10 text-md font-medium">
                         Войти
                     </Button>
                 </CardContent>
